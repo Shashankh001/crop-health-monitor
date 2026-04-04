@@ -1,0 +1,28 @@
+============================================================
+CROP HEALTH ANALYSIS REPORT
+NDVI-Based Vegetation Assessment
+============================================================
+
+SCENE SUMMARY
+----------------------------------------
+Total pixels:      56,655,891
+Valid pixels:      29,544,088
+No-data pixels:    27,111,803
+
+Mean NDVI:         -0.2370
+Min NDVI:          -0.7162
+Max NDVI:          0.0994
+
+ZONE BREAKDOWN
+----------------------------------------
+Zone                       Pixels   Percentage
+--------------------------------------------
+dense vegetation                0        0.00%
+moderate crop                   0        0.00%
+stressed/sparse                 0        0.00%
+bare/dry soil               1,348        0.00%
+water/built-up         29,542,740      100.00%
+
+============================================================
+End of Report
+============================================================
