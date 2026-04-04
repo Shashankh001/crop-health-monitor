@@ -15,11 +15,16 @@ surface reflectance products to generate:
     - Greyscale band visualisations (PNG)
     - Statistical analysis report (TXT)
     - Zone breakdown data (CSV)
+
+Each run creates a timestamped subfolder within the output directory,
+and copies the input TIF files into that folder for organisation.
 """
 
 import argparse
 import os
+import shutil
 import sys
+from datetime import datetime
 
 from file_loader import load_bands
 from ndvi_processor import compute_ndvi, classify_zones
@@ -73,19 +78,73 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def create_run_folder(base_output: str) -> str:
+    """
+    Create a timestamped subfolder for this analysis run.
+
+    Generates a unique folder name using the current timestamp in the
+    format 'run_YYYYMMDD_HHMMSS' to organise multiple analysis runs.
+
+    Args:
+        base_output: Base output directory path.
+
+    Returns:
+        Full path to the created run-specific subfolder.
+
+    Raises:
+        OSError: If the directory cannot be created.
+    """
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    run_folder = os.path.join(base_output, f'run_{timestamp}')
+    os.makedirs(run_folder, exist_ok=True)
+    return run_folder
+
+
+def copy_input_files(red_path: str, nir_path: str, run_folder: str) -> tuple[str, str]:
+    """
+    Copy input TIF files to the run folder for organisation.
+
+    Copies the original red and NIR band files into the run-specific
+    output folder to keep inputs and outputs together.
+
+    Args:
+        red_path: Path to the original red band GeoTIFF file.
+        nir_path: Path to the original NIR band GeoTIFF file.
+        run_folder: Destination folder for the copies.
+
+    Returns:
+        Tuple of (new_red_path, new_nir_path) pointing to the copied files.
+
+    Raises:
+        FileNotFoundError: If source files do not exist.
+        OSError: If files cannot be copied.
+    """
+    red_filename = os.path.basename(red_path)
+    nir_filename = os.path.basename(nir_path)
+
+    new_red_path = os.path.join(run_folder, red_filename)
+    new_nir_path = os.path.join(run_folder, nir_filename)
+
+    shutil.copy2(red_path, new_red_path)
+    shutil.copy2(nir_path, new_nir_path)
+
+    return new_red_path, new_nir_path
+
+
 def main() -> int:
     """
     Execute the NDVI analysis pipeline.
 
     Orchestrates the full processing workflow:
         1. Parse command-line arguments
-        2. Create output directory
-        3. Load red and NIR bands from GeoTIFF files
-        4. Compute NDVI
-        5. Classify into vegetation zones
-        6. Save visualisation outputs (PNG images)
-        7. Compute statistics
-        8. Write text and CSV reports
+        2. Create timestamped run folder within output directory
+        3. Copy input TIF files to run folder
+        4. Load red and NIR bands from GeoTIFF files
+        5. Compute NDVI
+        6. Classify into vegetation zones
+        7. Save visualisation outputs (PNG images)
+        8. Compute statistics
+        9. Write text and CSV reports
 
     Args:
         None
@@ -105,50 +164,59 @@ def main() -> int:
         print("=" * 50)
         print()
 
-        # Create output directory if it doesn't exist
-        print(f"[1/7] Setting up output directory: {args.output}")
+        # Create base output directory if it doesn't exist
+        print(f"[1/8] Setting up output directory: {args.output}")
         os.makedirs(args.output, exist_ok=True)
 
+        # Create timestamped run folder
+        run_folder = create_run_folder(args.output)
+        print(f"       Created run folder: {os.path.basename(run_folder)}")
+
+        # Copy input TIF files to run folder
+        print(f"[2/8] Copying input files to run folder...")
+        copy_input_files(args.red, args.nir, run_folder)
+        print(f"       Copied: {os.path.basename(args.red)}, {os.path.basename(args.nir)}")
+
         # Load bands
-        print(f"[2/7] Loading red band: {args.red}")
-        print(f"      Loading NIR band: {args.nir}")
+        print(f"[3/8] Loading red band: {args.red}")
+        print(f"       Loading NIR band: {args.nir}")
         red, nir = load_bands(args.red, args.nir)
-        print(f"      Image dimensions: {red.shape[1]} x {red.shape[0]} pixels")
+        print(f"       Image dimensions: {red.shape[1]} x {red.shape[0]} pixels")
 
         # Compute NDVI
-        print("[3/7] Computing NDVI...")
+        print("[4/8] Computing NDVI...")
         ndvi = compute_ndvi(red, nir)
-        print("      NDVI computation complete.")
+        print("       NDVI computation complete.")
 
         # Classify zones
-        print("[4/7] Classifying vegetation zones...")
+        print("[5/8] Classifying vegetation zones...")
         zones = classify_zones(ndvi)
-        print("      Zone classification complete.")
+        print("       Zone classification complete.")
 
         # Save visualisation outputs
-        print("[5/7] Generating visualisations...")
-        save_outputs(ndvi, red, nir, args.output)
-        print(f"      Saved: ndvi_map.png, red_band.png, nir_band.png")
+        print("[6/8] Generating visualisations...")
+        save_outputs(ndvi, red, nir, run_folder)
+        print(f"       Saved: ndvi_map.png, red_band.png, nir_band.png")
 
         # Compute statistics
-        print("[6/7] Computing statistics...")
+        print("[7/8] Computing statistics...")
         stats = compute_stats(ndvi, zones)
-        print(f"      Valid pixels: {stats['valid_pixels']:,}")
-        print(f"      Mean NDVI: {stats['mean_ndvi']:.4f}")
+        print(f"       Valid pixels: {stats['valid_pixels']:,}")
+        print(f"       Mean NDVI: {stats['mean_ndvi']:.4f}")
 
         # Write reports
-        print("[7/7] Writing reports...")
-        txt_path = os.path.join(args.output, 'report.txt')
-        csv_path = os.path.join(args.output, 'zones.csv')
+        print("[8/8] Writing reports...")
+        txt_path = os.path.join(run_folder, 'report.txt')
+        csv_path = os.path.join(run_folder, 'zones.csv')
         write_txt_report(stats, txt_path)
         write_csv_report(stats, csv_path)
-        print(f"      Saved: report.txt, zones.csv")
+        print(f"       Saved: report.txt, zones.csv")
 
         print()
         print("=" * 50)
         print("ANALYSIS COMPLETE")
         print("=" * 50)
-        print(f"Results saved to: {os.path.abspath(args.output)}")
+        print(f"Results saved to: {os.path.abspath(run_folder)}")
 
         # Print quick zone summary
         print()
