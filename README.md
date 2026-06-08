@@ -37,9 +37,9 @@ This tool processes Landsat 7 Level-2 surface reflectance satellite imagery to g
 ## Example Input
 
 <img width="634" height="649" alt="image" src="https://github.com/user-attachments/assets/094387d8-98b7-418d-9838-539f863d82fc" />
-```
-B4.TIF
-```
+
+`B4.TIF`
+
 
 ## Example Output
 <img width="7651" height="7791" alt="ndvi_map" src="https://github.com/user-attachments/assets/c770b6a5-6f9b-4810-b5e3-49dd205f6e00" />
