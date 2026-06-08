@@ -2,14 +2,14 @@
 """
 Crop Health Monitor - NDVI Analysis Pipeline
 
-Main entry point for processing Landsat 7 satellite imagery to assess
+Main entry point for processing Landsat 7/8/9 satellite imagery to assess
 crop and vegetation health using the Normalized Difference Vegetation
 Index (NDVI).
 
 Usage:
     python main.py --red B4.TIF --nir B5.TIF [--output ./output]
 
-This script processes red and near-infrared bands from Landsat 7 Level-2
+This script processes red and near-infrared bands from Landsat 7/8/9 Level-2
 surface reflectance products to generate:
     - Colour-coded NDVI vegetation zone map (PNG)
     - Greyscale band visualisations (PNG)
